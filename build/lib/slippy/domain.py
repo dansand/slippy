@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
+...this code was written by Lion Krischer, original copyright and license:
+
 Classes handling the domain definition and associated functionality for LASIF.
 
 :copyright:

@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='slippy',
-      version='0.1',
+      version='0.0.1a',
       description='tools for the Underworld',
       url='https://github.com/dansand/slippy.git',
       author='Dan Sandiford',

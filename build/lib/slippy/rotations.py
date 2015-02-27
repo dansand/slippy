@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
+...this code was written by Lion Krischer, original copyright and license:
+
 A collection of functions to rotate vectors, seismograms and moment tensors on
 a spherical body, e.g. the Earth.
 
