@@ -14,16 +14,10 @@ import math
 import numpy as np
 
 # rheology & temperature profile functions
-def viscosity(T,D):
-"""
-Arhenenius Viscosity
-"""
+def viscosity(T,D, E0, V0, R0):
     return math.exp((E0 + V0*D)/(R0*T))
     
 
-def hsct(depth,time, Tint, Tsurf):
-"""
-Temperature profiles
-"""
+def hsct(depth,time, Tint, Tsurf, kappa):
     T = Tsurf +(Tint-Tsurf) * math.erf(depth/(2*math.sqrt(time*kappa)))
-            return T
+    return T
