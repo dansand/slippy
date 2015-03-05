@@ -19,5 +19,10 @@ def viscosity(T,D, E0, V0, R0):
     
 
 def hsct(depth,time, Tint, Tsurf, kappa):
-    T = Tsurf +(Tint-Tsurf) * math.erf(depth/(2*math.sqrt(time*kappa)))
-    return T
+    Th = Tsurf +(Tint-Tsurf) * math.erf(depth/(2*math.sqrt(time*kappa)))
+    return Th
+    
+def linear_geotherm(depth, Zthick, Tint, Tsurf):
+    Tl = (Tint-Tsurf)/float(Zthick)
+    Tl = Tl*depth
+    return Tl

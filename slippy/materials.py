@@ -21,10 +21,13 @@ from slippy import utils
 class Materials(object):
     """
     This function creates a dictionary with model inputs for undworld,
-    Including, density, viscosity, temperature, yeilding
+    Including, density, viscosity, temperature, yeilding.
+    At the moment, the first object of this Class created needs to be the slab-
+    This sets the scaling for the models, an other components follow. 
     ...
     -age: age of lithosphere (Myr)
     -crustThickness: km
+    -renorm: this should be the density of the least dense part of your model
     - cooling model: The cooling model is used to derive densities.
         cooling_model="HSCM", "PLATE"
     -layers: The user can specify any number of layers, these are the depths (km) of the bottom of each layer
@@ -43,16 +46,24 @@ class Materials(object):
     .. rubric:: Example
     >>> test = materials.Materials(age = 120, crustThickness = 2)
     """
-    def __init__(self, age = 80, crustThickness = 6, cooling_model="HSCM",
+    def __init__(self, age = 80, crustThickness = 6, renorm= 2700, cooling_model="HSCM",
                  layers = [25,50,75 ,100,200, 1000000],
                  scales = [110000,1e20,10],
                  rock_prop=[2900, 3400,3500],
                  thermal_prop=[3.0e-5, 1e-6, 1300.0],
                  visc_prop=[240000, 5.0e-6, 5, 0.01],
                  yield_prop=[48, 0.066667, 5.0e-6]):
-                 
+        
+        if cooling_model == "HSCM":
+            self.cooling_model = "HSCM"
+        elif cooling_model =="linear":
+            self.cooling_model = "linear"
+        else:
+            raise ValueError("Unknown cooling model '%s'." %
+                             cooling_model)                           
         self.age = age
         self.crustThickness = crustThickness
+        self.renorm = renorm
         self.cooling_model = cooling_model
         self.layers = layers
         self.scales = scales
@@ -137,7 +148,10 @@ class Materials(object):
         ##############
     
         for d in depth:
-            temp.append(utils.hsct(d*self.Kms,self.time,  self.Tint, self.Tsurf, self.kappa))
+            if self.cooling_model == "HSCM":
+                temp.append(utils.hsct(d*self.Kms,self.time,  self.Tint, self.Tsurf, self.kappa))
+            elif self.cooling_model == "linear":
+                temp.append(utils.linear_geotherm(d*self.Kms,self.layers[-3]*self.Kms,self.Tint, self.Tsurf))
             density.append(DensityLayer[densitylayer] * (1 - (temp[index] - self.Tsurf) * self.alpha ))
             logViscosity.append(math.log(max(utils.viscosity(temp[index]+self.TC2K,d*self.Kms, self.E0, self.V0, self.R0),self.viscosityMinimum)/self.referenceViscosity,10.0))
             logViscosity_d.append(math.log(utils.viscosity(self.Tint+self.TC2K,d*self.Kms, self.E0, self.V0, self.R0)/self.referenceViscosity,10.0))
@@ -176,14 +190,18 @@ class Materials(object):
         ##############
         # Rescaling
         ##############
-    
-        densityScale =  np.mean(LayerAverageDensity[0:4]) - self.hotMantleDensity
-        LayerAverageDensity = [(i - self.crustDensity) / densityScale for i in LayerAverageDensity]
-        scaledMantleDensity = (self.hotMantleDensity - self.crustDensity)/densityScale
+        j = len(self.layers) - 2
+        if len(self.scales) == 3:
+            densityScale =  np.mean(LayerAverageDensity[0:j]) - self.hotMantleDensity
+        else:
+            densityScale = self.scales[3]
+        LayerAverageDensity = [(i - self.renorm) / densityScale for i in LayerAverageDensity]
+        scaledMantleDensity = (self.hotMantleDensity - self.renorm)/densityScale
         timeScale = self.viscosityScale/(densityScale* self.lengthScale * self.gravityScale)
         stokesstressScale = densityScale* self.gravityScale * self.lengthScale
         lithstressScale = densityScale* self.gravityScale * self.lengthScale * (np.mean(LayerAverageDensity[0:4]))
         #scales =[lengthScale,viscosityScale,gravityScale]
+        self.scales.append(densityScale)
         self.scales.append(timeScale)
         self.scales.append(stokesstressScale)
         self.scales.append(lithstressScale)
