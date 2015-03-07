@@ -41,7 +41,7 @@ class Materials(object):
     -viscous properties: parameters for and Arrhenius-type relationship, Activation energy (J/mol),Activation volume, viscosityTruncation, viscosityMinimum
         visc_prop=[240000, 5.0e-6, 5, 0.01],
     -yield properties: parameters for the yielding rheology, cohesion, frictionCoeff
-       yield_props=[50., 0.066667]
+       yield_prop=[50., 0.066667]
        
     .. rubric:: Example
     >>> test = materials.Materials(age = 120, crustThickness = 2)
