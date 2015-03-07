@@ -101,23 +101,12 @@ class Materials(object):
         self.viscosityMinimum = visc_prop[3]
         self.referenceViscosity = utils.viscosity(self.Tint+self.TC2K,100*self.Kms, self.E0, self.V0, self.R0);
         
-    def dan_func(self, param):
-     
-        self.viscosityTruncation = self.visc_prop[2]
-        crazy_val2 = 6.
-        some_value = self.Tint
-        out = utils.viscosity(self.Tint+self.TC2K,100*self.Kms, self.E0, self.V0, self.R0)
-        out = out + self.viscosityTruncation + crazy_val2
-        return out
-        
     def write_properties_dict(self, out_name):
         import pickle
         dic = self.properties()
         n = out_name
-        pickle.dump(dic, open( n, "wb" ) )
-        
-        
-        
+        pickle.dump(dic, open( n, "wb" ))
+                
     def properties(self):
         # Layer definitions (Include a final layer to accumulate any out-of-range values used for plotting )
         depth = np.linspace(0.0, 250, num=5000) 
@@ -143,9 +132,9 @@ class Materials(object):
         densitylayer = 0
         lithostaticPressure.append(0.0)
         yieldStrength.append(self.cohesion)
-        ##############
+        ##################
         # Calculate values
-        ##############
+        ##################
     
         for d in depth:
             if self.cooling_model == "HSCM":
@@ -195,6 +184,8 @@ class Materials(object):
             densityScale =  np.mean(LayerAverageDensity[0:j]) - self.hotMantleDensity
         else:
             densityScale = self.scales[3]
+        #make sure no layer is less dense than the renorm value (assumes no thermal expansion in  top/crustal layer)
+        LayerAverageDensity = [max(i, self.renorm) for i in  LayerAverageDensity]
         LayerAverageDensity = [(i - self.renorm) / densityScale for i in LayerAverageDensity]
         scaledMantleDensity = (self.hotMantleDensity - self.renorm)/densityScale
         timeScale = self.viscosityScale/(densityScale* self.lengthScale * self.gravityScale)
@@ -207,7 +198,7 @@ class Materials(object):
         self.scales.append(lithstressScale)
         
         ##############
-        # Rescaling
+        # Write materials dict
         ##############
         
         litho_dict = dict()
@@ -219,9 +210,14 @@ class Materials(object):
             litho_dict[name]["AverageVisc"] = min(LayerAverageVisc[i], 10**(self.viscosityTruncation))
             litho_dict[name]["AverageDensity"] = LayerAverageDensity[i]
             litho_dict[name]["AverageStrength"] = (LayerAverageStrength[i] * 1.0e6)/lithstressScale
-        litho_dict["scalingFactors"] = self.scales
         litho_dict["otherParams"] = [self.yield_prop[0], self.yield_prop[1],scaledMantleDensity]
-        return litho_dict    
+        layer = self.layers
+        litho_dict["layers"] = LayerTop[0:-1]
+        scale = self.scales
+        dodge = min(6, len(scale))
+        litho_dict["scalingFactors"] = scale[0:dodge+1]
+        return litho_dict
+        self.scales = []    
 
         
             
