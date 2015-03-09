@@ -9,6 +9,13 @@ Layers class of slippy.
 :license:
     MIT
 """
+import math
+import numpy as np
+from shapely.affinity import translate
+from shapely.geometry import Polygon
+from shapely.geometry import MultiPoint
+from shapely.geometry import Point
+import underworld as uw
 
 def create_layers(layer_depths,  trench_shp, Rc = 180, angle = 70, Zmax = 250, kms_to_model = 111. ):
     """
@@ -34,6 +41,7 @@ def create_layers(layer_depths,  trench_shp, Rc = 180, angle = 70, Zmax = 250, k
     Here we want a function that returns a function 
     The function returned is a function of x,y, f(x, y)
     """
+    [i/kms_to_model for i in layer_depths]
     def create_surface(ldepth):
         rl = Rc - ldepth  #adjusted radius of curvature. 
         ang_rad = angle*(math.pi/180)
@@ -112,7 +120,7 @@ def create_slab_region(trench_shp,direction = 1, Rc = 180, angle = 70, Zmax = 25
         tdis = tdis*-1.
     print tdis
     #Move trench northward by y. 
-    trench = uplate.intersection(lplate)
+    trench = trench_shp
     #trench1 = translate(trench, xoff=0.0, yoff=my, zoff=0.0)
     trench2 = translate(trench, xoff=0.0, yoff=tdis, zoff=0.0)
     tpts = list(trench.coords)
@@ -122,3 +130,160 @@ def create_slab_region(trench_shp,direction = 1, Rc = 180, angle = 70, Zmax = 25
     temp_crds = tpts + tpts2
     slab_region = Polygon(temp_crds)
     return(slab_region)
+    
+    
+    
+    
+def map_flat_layers(position, dim, lon = [], lat = [], shapes=[], layers = [], upper_mantle_index=4, lower_mantle_index=7, lower_mantle_depth = 4, mantle_buffer = [10,-10,10,-10]):
+    """
+    This function loops through shapes (Shapely Polygons) and layers, and assigns material indexes.
+    """
+    if dim == 3:
+        lat = position[0]
+        lon = position[1]
+        depth = position[2]
+    elif dim == 2:
+        if lon:
+            lon = lon[0]
+            lat = position[0]
+            depth = position[1]
+        elif lat:
+            lat = lat[0]
+            lon = position[0]
+            depth = position[1]
+        else:
+            cs = raw_input("enter x or y axis to make cross-section: ")
+            if cs == "x":
+                lon = position[0]
+                lat = raw_input("enter y-pos to make x-cross-section: ")
+                lat = float(lon)
+                depth = position[1]
+            elif cs == "y":
+                lat = position[0]
+                lon = raw_input("enter x-pos to take y-cross-section")
+                lon = float(lat)
+                depth = position[1]
+            else:
+                print "Must enter x or y"
+    else:
+        print "dim must be 2 or 3"
+    #any points outside mantle buffer become upper mantle   
+    #any point benear upper mantle become lower mantle
+    if depth < lower_mantle_depth:
+        mat_index = lower_mantle_index     
+    elif lon > mantle_buffer[0]:
+        mat_index = upper_mantle_index
+    elif lon < mantle_buffer[1]:
+        mat_index = upper_mantle_index
+    elif lat > mantle_buffer[2]:
+        mat_index = upper_mantle_index
+    elif lat < mantle_buffer[3]:
+        mat_index = upper_mantle_index
+    else:
+    #use shapely point class
+    #pyGplates to be used in near-future
+        pt = Point(lon, lat)
+        found_shape = 0
+        mat_index = 0
+        mat_counter = 0
+        for i in range(0, len(shapes)):
+            mat_counter = mat_counter + i*(len(layers[i])-1)
+            mat_index = mat_counter
+            found_layer = 0
+            if found_shape ==1:
+                break
+            elif shapes[i].contains(pt):
+                found_shape == 1
+                found_layer = 0 #reset after layer loop
+                for j in range(0, len(layers[i][:-1])):
+                    k = j+1
+                    if found_layer == 1:
+                        break
+                    elif layers[i][j] > depth > layers[i][k]:
+                        mat_index = mat_index
+                        found_layer = 1
+                        break
+                    elif k == len(layers[i]) -1:
+                        mat_index = upper_mantle_index
+                        break
+                    else:
+                        mat_index = mat_index +1    
+                break    
+            else:
+                mat_index = upper_mantle_index
+    return mat_index   
+    
+    
+    
+def map_slab_layers(ii, mat_indx_var, position, dim, cutoff  = 250, lon = [], lat = [], shapes=[], layers = [], upper_mantle_index=5):
+    """
+    This function loops through shapes (Shapely Polygons) and layers, and assigns material indexes.
+    """
+    if dim == 3:
+        lat = position[0]
+        lon = position[1]
+        depth = position[2]
+    elif dim == 2:
+        if lon:
+            lon = lon[0]
+            lat = position[0]
+            depth = position[1]
+        elif lat:
+            lat = lat[0]
+            lon = position[0]
+            depth = position[1]
+        else:
+            cs = raw_input("enter x or y axis to make cross-section: ")
+            if cs == "x":
+                lon = position[0]
+                lat = raw_input("enter y-pos to make x-cross-section: ")
+                lat = float(lon)
+                depth = position[1]
+            elif cs == "y":
+                lat = position[0]
+                lon = raw_input("enter x-pos to take y-cross-section")
+                lon = float(lat)
+                depth = position[1]
+            else:
+                print "Must enter x or y"
+    else:
+        print "dim must be 2 or 3"
+    #No slab above Z max    
+    if depth < cutoff:
+        mat_index = int(uw.swarms.tools.SwarmVariable_GetValueAt(mat_indx_var, ii)[0])
+    #use shapely point class
+    #pyGplates to be used in near-future
+    else: 
+        pt = Point(lon, lat)
+        found_shape = 0
+        mat_index = 0
+        mat_counter = 0
+        for i in range(0, len(shapes)):
+            found_layer = 0
+            mat_counter = mat_counter + i*(len(layers[i])-1)
+            mat_index = mat_counter
+            if found_shape ==1:
+                break
+            elif shapes[i].contains(pt):
+                found_shape == 1
+                found_layer = 0 #reset after layer loop
+                for j in range(0, len(layers[i][:-1])):   #This -2 thing would change depending on how many layers 
+                    k = j+1
+                    if found_layer == 1:
+                        break
+                    elif layers[i][j](lon,lat) >= depth > layers[i][k](lon,lat):
+                        #print(layers[i][j](lon,lat))
+                        mat_index = mat_index
+                        found_layer = 1
+                        break
+                    elif k == len(layers[i]) -1:
+                        mat_index = int(uw.swarms.tools.SwarmVariable_GetValueAt(mat_indx_var, ii)[0])
+                        found_layer = 1
+                        break
+                    else:
+                        mat_index = mat_index +1   
+                break 
+            else:
+                mat_index = int(uw.swarms.tools.SwarmVariable_GetValueAt(mat_indx_var, ii)[0])
+            
+    return mat_index  
