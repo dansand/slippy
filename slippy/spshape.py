@@ -12,6 +12,7 @@ Shapes class of slippy.
 import math
 import numpy as np
 import underworld as uw
+import underworld.shapes as shape
 
 
 

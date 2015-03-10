@@ -52,7 +52,7 @@ class Materials(object):
                  rock_prop=[2900, 3400,3500],
                  thermal_prop=[3.0e-5, 1e-6, 1300.0],
                  visc_prop=[240000, 5.0e-6, 5, 0.01],
-                 yield_prop=[48, 0.066667, 5.0e-6]):
+                 yield_prop=[48, 0.66667, 5.0e-6]):
         
         if cooling_model == "HSCM":
             self.cooling_model = "HSCM"
