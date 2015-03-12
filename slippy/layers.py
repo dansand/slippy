@@ -168,7 +168,7 @@ def map_flat_layers(position, dim, lon = [], lat = [], shapes=[], layers = [], u
     else:
         print "dim must be 2 or 3"
     #any points outside mantle buffer become upper mantle   
-    #any point benear upper mantle become lower mantle
+    #any point beneath upper mantle become lower mantle
     if depth < lower_mantle_depth:
         mat_index = lower_mantle_index     
     elif lon > mantle_buffer[0]:
@@ -187,7 +187,10 @@ def map_flat_layers(position, dim, lon = [], lat = [], shapes=[], layers = [], u
         mat_index = 0
         mat_counter = 0
         for i in range(0, len(shapes)):
-            mat_counter = mat_counter + i*(len(layers[i])-1)
+            if i == 0:
+                mat_counter = 0
+            else: 
+                mat_counter = mat_counter + ((len(layers[i-1])-1))
             mat_index = mat_counter
             found_layer = 0
             if found_shape ==1:
@@ -215,7 +218,7 @@ def map_flat_layers(position, dim, lon = [], lat = [], shapes=[], layers = [], u
     
     
     
-def map_slab_layers(ii, mat_indx_var, position, dim, cutoff  = 250, lon = [], lat = [], shapes=[], layers = [], upper_mantle_index=5):
+def map_slab_layers(ii, mat_indx_var, position, dim, cutoff  = 250, lon = [], lat = [], shapes=[], layers = [], mantle_buffer = [10,-10,10,-10]):
     """
     This function loops through shapes (Shapely Polygons) and layers, and assigns material indexes.
     """
@@ -250,6 +253,14 @@ def map_slab_layers(ii, mat_indx_var, position, dim, cutoff  = 250, lon = [], la
         print "dim must be 2 or 3"
     #No slab above Z max    
     if depth < cutoff:
+        mat_index = int(uw.swarms.tools.SwarmVariable_GetValueAt(mat_indx_var, ii)[0])    
+    elif lon > mantle_buffer[0]:
+        mat_index = int(uw.swarms.tools.SwarmVariable_GetValueAt(mat_indx_var, ii)[0]) 
+    elif lon < mantle_buffer[1]:
+        mat_index = int(uw.swarms.tools.SwarmVariable_GetValueAt(mat_indx_var, ii)[0]) 
+    elif lat > mantle_buffer[2]:
+        mat_index = int(uw.swarms.tools.SwarmVariable_GetValueAt(mat_indx_var, ii)[0]) 
+    elif lat < mantle_buffer[3]:
         mat_index = int(uw.swarms.tools.SwarmVariable_GetValueAt(mat_indx_var, ii)[0])
     #use shapely point class
     #pyGplates to be used in near-future
@@ -259,9 +270,12 @@ def map_slab_layers(ii, mat_indx_var, position, dim, cutoff  = 250, lon = [], la
         mat_index = 0
         mat_counter = 0
         for i in range(0, len(shapes)):
-            found_layer = 0
-            mat_counter = mat_counter + i*(len(layers[i])-1)
+            if i == 0:
+                mat_counter = 0
+            else: 
+                mat_counter = mat_counter + ((len(layers[i-1])-1))
             mat_index = mat_counter
+            found_layer = 0       
             if found_shape ==1:
                 break
             elif shapes[i].contains(pt):
