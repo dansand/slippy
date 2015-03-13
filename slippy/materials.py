@@ -107,7 +107,7 @@ class Materials(object):
         n = out_name
         pickle.dump(dic, open( n, "wb" ))
                 
-    def properties(self):
+    def properties(self, plot=False):
         # Layer definitions (Include a final layer to accumulate any out-of-range values used for plotting )
         depth = np.linspace(0.0, 250, num=5000) 
         temp = []
@@ -132,6 +132,8 @@ class Materials(object):
         densitylayer = 0
         lithostaticPressure.append(0.0)
         yieldStrength.append(self.cohesion)
+        
+        
         ##################
         # Calculate values
         ##################
@@ -141,6 +143,7 @@ class Materials(object):
                 temp.append(utils.hsct(d*self.Kms,self.time,  self.Tint, self.Tsurf, self.kappa))
             elif self.cooling_model == "linear":
                 temp.append(utils.linear_geotherm(d*self.Kms,self.layers[-3]*self.Kms,self.Tint, self.Tsurf))
+                temp[index] = min(temp[index], self.Tint)
             density.append(DensityLayer[densitylayer] * (1 - (temp[index] - self.Tsurf) * self.alpha ))
             logViscosity.append(math.log(max(utils.viscosity(temp[index]+self.TC2K,d*self.Kms, self.E0, self.V0, self.R0),self.viscosityMinimum)/self.referenceViscosity,10.0))
             logViscosity_d.append(math.log(utils.viscosity(self.Tint+self.TC2K,d*self.Kms, self.E0, self.V0, self.R0)/self.referenceViscosity,10.0))
@@ -186,8 +189,9 @@ class Materials(object):
             densityScale = self.scales[3]
         #make sure no layer is less dense than the renorm value (assumes no thermal expansion in  top/crustal layer)
         LayerAverageDensity = [max(i, self.renorm) for i in  LayerAverageDensity]
-        LayerAverageDensity = [(i - self.renorm) / densityScale for i in LayerAverageDensity]
+        LayerAverageDensity = [((i - self.renorm) / densityScale) for i in LayerAverageDensity]
         scaledMantleDensity = (self.hotMantleDensity - self.renorm)/densityScale
+        #viscous time scale
         timeScale = self.viscosityScale/(densityScale* self.lengthScale * self.gravityScale)
         stokesstressScale = densityScale* self.gravityScale * self.lengthScale
         lithstressScale = densityScale* self.gravityScale * self.lengthScale * (np.mean(LayerAverageDensity[0:4]))
@@ -198,7 +202,7 @@ class Materials(object):
         self.scales.append(lithstressScale)
         
         ##############
-        # Write materials dict
+        # Make materials dict
         ##############
         
         litho_dict = dict()
@@ -216,8 +220,182 @@ class Materials(object):
         scale = self.scales
         dodge = min(6, len(scale))
         litho_dict["scalingFactors"] = scale[0:dodge+1]
-        return litho_dict
-        self.scales = []    
+
+
+        
+        ##############
+        # Make plotting dict
+        ##############  
+        
+        if plot == True:
+            plot_dict = dict()
+            plot_dict["LayerTop"] = LayerTop
+            plot_dict["depth"] = depth
+            plot_dict["temp"] = temp
+            plot_dict["logViscosity"] = logViscosity
+            plot_dict["logViscosity_d"] = logViscosity_d
+            plot_dict["logViscosity_tr"] = logViscosity_tr
+            plot_dict["density"] = density
+            plot_dict["lithostaticPressure"] = lithostaticPressure
+            plot_dict["yieldStrength"] = yieldStrength
+            
+            
+            plot_dict["LayerLogAverageVisc"] = LayerLogAverageVisc
+            plot_dict["LayerAverageDensity"] = LayerAverageDensity
+            plot_dict["LayerAverageStrength"] = LayerAverageStrength
+            
+
+        # Return desired dictionary            
+            return plot_dict
+        else:
+            return litho_dict
+            
+            
+            
+            
+    def plot(self):
+        """
+        calls "properties" method for current instance, with plot flag set to True
+        At this stage returns a default plot, adapted from Louis Moresi 
+        """
+        try:
+            import matplotlib.pyplot as pypl
+            from matplotlib.backends.backend_pdf import PdfPages
+        except ImportError:
+            print "The matplotlib tools are required to make plots with this script !"
+            quit()
+        
+        #Gather any necessary class variables/attributes
+        depth = self.layers
+        LayerBase = self.layers
+        barnum = len(depth) - 2
+        
+        
+        
+        #Get the necessary objects to plot, by calling self.properties
+        pdict = self.properties(plot=True)
+        
+        #get the objects to plot 
+        
+        LayerTop = pdict["LayerTop"]
+        depth = pdict["depth"]
+        temp = pdict["temp"]
+        logViscosity = pdict["logViscosity"]
+        logViscosity_d = pdict["logViscosity_d"]
+        logViscosity_tr = pdict["logViscosity_tr"]
+        density = pdict["density"]
+        lithostaticPressure = pdict["lithostaticPressure"]
+        yieldStrength = pdict["yieldStrength"]
+        
+        LayerLogAverageVisc = pdict["LayerLogAverageVisc"]
+        LayerAverageDensity = pdict["LayerAverageDensity"]
+        LayerAverageStrength = pdict["LayerAverageStrength"]
+        
+        boxheight = [i - j for i,j in zip(LayerBase, LayerTop)]
+        
+        
+
+        
+        #Do plot
+        figure1 = pypl.figure(figsize=(10,6))
+
+
+        tempPlot = figure1.add_subplot(133)
+        tempPlot.plot(temp,depth,  color='green', linestyle='solid', linewidth=2, label='')
+        tempPlot.set_xlabel('Temperature ($^\circ$C)')
+        tempPlot.set_xlim(0,1600)
+        tempPlot.set_xticks([0,500,1000,1500])
+        tempPlot.set_yticks([0,50,100,150, 200,250])
+        tempPlot.grid(axis='y')
+        tempPlot.invert_yaxis()
+        pypl.setp( tempPlot.get_yticklabels(), visible=False)
+               
+        # now the viscosity plot
+
+        viscPlot = tempPlot.twiny()
+        viscPlot.plot(logViscosity_tr,depth, color='blue', linestyle='solid', linewidth=2, label='')
+        viscPlot.plot(logViscosity,depth, color='blue', linestyle='dashed', linewidth=2, label='')
+        viscPlot.plot(logViscosity_d,depth, color='#222222', linestyle='dashed', linewidth=2, label='')
+        viscPlot.set_xlabel('log$_{10}$ relative viscosity')
+        viscPlot.set_xlim(-2, 7)
+        
+        # now add viscosity-average bars
+        viscPlot.barh(LayerTop[0:barnum],LayerLogAverageVisc[0:barnum], boxheight[0:barnum], left=0.0, alpha=0.5)  #Dont think this will cope with different width layers
+        viscPlot.barh(LayerTop[barnum], LayerLogAverageVisc[barnum], boxheight[barnum], left=0.0, alpha=0.5, linestyle='solid', hatch='//')
+
+
+
+        ## Add density plot
+
+        densityPlot = figure1.add_subplot(132)
+        densityPlot.set_xlabel('Density (kg/m$^3$)')
+        
+        densityPlot.set_xlim(2500,3500)
+        densityPlot.set_xticks([2800,3000,3200,3400])
+        densityPlot.set_yticks([0,50,100,150, 200,250])
+        pypl.setp( densityPlot.get_yticklabels(), visible=False)
+
+        densityPlot.grid(axis='y')
+        densityPlot.plot(density,depth, color='red', linestyle='solid', linewidth=2, label='density (kg/m$^3$)')
+        densityPlot.invert_yaxis()
+
+        relDensityPlot = densityPlot.twiny()
+        relDensityPlot.set_xlabel('Relative density')
+        lhs = min(LayerAverageDensity[0:barnum])
+        relDensityPlot.set_xlim(lhs-2, 20)    #make this a more resiliant
+        relDensityPlot.axvline(x=10, ymin=0, ymax=1, linestyle='dotted', color='black')
+        
+        
+        # now add relative density bars
+        relDensityPlot.barh(LayerTop[0:barnum],LayerAverageDensity[0:barnum], boxheight[0:barnum], left=0.0, alpha=0.5, color='#FF2222')
+        relDensityPlot.barh(LayerTop[barnum], LayerAverageDensity[barnum], boxheight[barnum], left=0.0, alpha=0.5, fill='false', color='#FF2222', hatch='//')
+
+
+        ## Add strength/pressure plot
+        pressurePlot = figure1.add_subplot(131)
+        pressurePlot.set_xlabel('Pressure (Mpa)')
+        # pressurePlot.set_xlim(2800,3300)
+        pressurePlot.set_yticks([0,50,100,150, 200,250])
+        pressurePlot.plot(lithostaticPressure, depth, color='DarkGreen', linestyle='dashed', linewidth=2, label='pressure (MPa)')
+        pressurePlot.set_xticks([0,2500,5000,7500,10000])
+        pressurePlot.grid(axis='y')
+        pressurePlot.invert_yaxis()
+        pressurePlot.set_ylabel('Depth (km)')
+
+        pypl.setp( pressurePlot.get_yticklabels(), visible=True)
+        
+        
+        ## Add the strength part 
+        strengthPlot = pressurePlot.twiny()
+        strengthPlot.set_xlabel('Yield strength (Mpa)')
+        strengthPlot.plot(yieldStrength, depth, color='green', linestyle='solid', linewidth=2, label='Yield strength (MPa)')
+
+        strengthPlot.barh(LayerTop[0:barnum],LayerAverageStrength[0:barnum], boxheight[0:barnum], left=0.0, alpha=0.5, color='green')
+        # strengthPlot.barh(100.0, LayerAverageStrength[4], height=100.0, left=0.0, alpha=0.5, color='#EEFFEE', linestyle='solid', hatch='//')
+        # Save this to 
+
+
+
+
+
+
+
+
+
+        pdf = PdfPages('viscosityDensityPlot-{:.0f}.pdf'.format(self.crustThickness))
+           
+        pypl.savefig(pdf, format='pdf') 
+        pdf.close()
+        
+        return LayerBase, LayerTop, LayerLogAverageVisc
+
+
+        
+             
+        
+            
+            
+        
 
         
             
