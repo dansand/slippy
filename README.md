@@ -17,6 +17,6 @@ to install slippy:
     
     cd slippy
     
-    pip install 
+    pip install -v -e . 
    
 
