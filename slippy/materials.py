@@ -300,7 +300,7 @@ class Materials(object):
         figure1 = pypl.figure(figsize=(10,6))
 
 
-        tempPlot = figure1.add_subplot(133)
+        tempPlot = figure1.add_subplot(143)
         tempPlot.plot(temp,depth,  color='green', linestyle='solid', linewidth=2, label='')
         tempPlot.set_xlabel('Temperature ($^\circ$C)')
         tempPlot.set_xlim(0,1600)
@@ -327,7 +327,7 @@ class Materials(object):
 
         ## Add density plot
 
-        densityPlot = figure1.add_subplot(132)
+        densityPlot = figure1.add_subplot(142)
         densityPlot.set_xlabel('Density (kg/m$^3$)')
         
         densityPlot.set_xlim(2500,3500)
@@ -352,7 +352,7 @@ class Materials(object):
 
 
         ## Add strength/pressure plot
-        pressurePlot = figure1.add_subplot(131)
+        pressurePlot = figure1.add_subplot(141)
         pressurePlot.set_xlabel('Pressure (Mpa)')
         # pressurePlot.set_xlim(2800,3300)
         pressurePlot.set_yticks([0,50,100,150, 200,250])
@@ -373,21 +373,43 @@ class Materials(object):
         strengthPlot.barh(LayerTop[0:barnum],LayerAverageStrength[0:barnum], boxheight[0:barnum], left=0.0, alpha=0.5, color='green')
         # strengthPlot.barh(100.0, LayerAverageStrength[4], height=100.0, left=0.0, alpha=0.5, color='#EEFFEE', linestyle='solid', hatch='//')
         # Save this to 
-
-
-
-
-
-
-
-
+        
+        
+        ##Add the combined strength plot
+        #get the viscous part of the stress
+        vel = 0.06 #velocity in m/y
+        vels = vel / (365*24*60*60) #velocity in m per second
+        visct = [(10**i)*self.viscosityScale for i in logViscosity_tr]
+        visc = [(10**i)*self.viscosityScale for i in logViscosity]
+        roc = 2.5e-11
+        y = 50 * self.Kms
+        exx = y*vels*roc
+        visctStress =  [i*exx*1.0e-6 for i in visct]#viscous stress in MPa
+        viscStress =  [i*exx*1.0e-6 for i in visc]#viscous stress in MPa
+        
+        
+        cStrength = [min(i,j) for i,j in zip(viscStress, yieldStrength)]
+        cStrengtht = [min(i,j) for i,j in zip(visctStress, yieldStrength)]
+        
+        
+        #Do plot
+        combstrengthPlot = figure1.add_subplot(144)
+        combstrengthPlot.plot(cStrength,depth,  color='black', linestyle='solid', linewidth=2, label='')
+        combstrengthPlot.plot(cStrengtht,depth, color='black', linestyle='dashed', linewidth=2, label='')
+        combstrengthPlot.set_xticks([0,500, 1000,1500])
+        combstrengthPlot.invert_yaxis()
+        combstrengthPlot.set_ylim(150,0)
+        
+        
 
         pdf = PdfPages('viscosityDensityPlot-{:.0f}.pdf'.format(self.crustThickness))
            
         pypl.savefig(pdf, format='pdf') 
         pdf.close()
         
-        return LayerBase, LayerTop, LayerLogAverageVisc
+        out = viscStress[2425:2450]
+        
+        return LayerBase, LayerTop, out
 
 
         

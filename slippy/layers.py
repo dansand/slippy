@@ -139,8 +139,8 @@ def map_flat_layers(position, dim, lon = [], lat = [], shapes=[], layers = [], u
     This function loops through shapes (Shapely Polygons) and layers, and assigns material indexes.
     """
     if dim == 3:
-        lat = position[0]
-        lon = position[1]
+        lat = position[1]
+        lon = position[0]
         depth = position[2]
     elif dim == 2:
         if lon:
@@ -223,8 +223,8 @@ def map_slab_layers(ii, mat_indx_var, position, dim, cutoff  = 250, lon = [], la
     This function loops through shapes (Shapely Polygons) and layers, and assigns material indexes.
     """
     if dim == 3:
-        lat = position[0]
-        lon = position[1]
+        lat = position[1]
+        lon = position[0]
         depth = position[2]
     elif dim == 2:
         if lon:
