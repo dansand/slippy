@@ -187,19 +187,22 @@ class Materials(object):
             densityScale =  np.mean(LayerAverageDensity[0:j]) - self.hotMantleDensity
         else:
             densityScale = self.scales[3]
+        lds = np.mean(LayerAverageDensity[0:j]) #for the lithostatic sacling
         #make sure no layer is less dense than the renorm value (assumes no thermal expansion in  top/crustal layer)
-        LayerAverageDensity = [max(i, self.renorm) for i in  LayerAverageDensity]
-        LayerAverageDensity = [((i - self.renorm) / densityScale) for i in LayerAverageDensity]
-        scaledMantleDensity = (self.hotMantleDensity - self.renorm)/densityScale
+        #LayerAverageDensity = [max(i, self.renorm) for i in  LayerAverageDensity]
+        #LayerAverageDensity = [((i - self.renorm) / densityScale) for i in LayerAverageDensity]
+        print LayerAverageStrength
+        LayerAverageDensity = [((i - self.hotMantleDensity) / densityScale) for i in LayerAverageDensity]
+        scaledMantleDensity = 0.
         #viscous time scale
         timeScale = self.viscosityScale/(densityScale* self.lengthScale * self.gravityScale)
         stokesstressScale = densityScale* self.gravityScale * self.lengthScale
-        lithstressScale = densityScale* self.gravityScale * self.lengthScale * (np.mean(LayerAverageDensity[0:4]))
+        lithstressScale = lds* self.gravityScale * self.lengthScale
         #scales =[lengthScale,viscosityScale,gravityScale]
         self.scales.append(densityScale)
         self.scales.append(timeScale)
         self.scales.append(stokesstressScale)
-        self.scales.append(lithstressScale)
+        #self.scales.append(lithstressScale)
         
         ##############
         # Make materials dict
