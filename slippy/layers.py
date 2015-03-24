@@ -106,10 +106,8 @@ def create_slab_region(trench_shp,direction = 1, Rc = 180, angle = 70, Zmax = 25
     #print slope
     z_ec = math.sqrt((mRc**2/ ((slope**2)+1)))
     y_ec = math.sqrt(mRc**2 - z_ec**2)
-    print y_ec, z_ec
     
     #work out northward distance covering the straight part of the slab
-    print mZ
     if mZ >= z_ec:
         tdep = mZ - (mRc - z_ec)
     else:
