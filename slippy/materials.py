@@ -195,7 +195,7 @@ class Materials(object):
         #LayerAverageDensity = [max(i, self.renorm) for i in  LayerAverageDensity]
         #LayerAverageDensity = [((i - self.renorm) / densityScale) for i in LayerAverageDensity]
         LayerAverageDensity = [((i - self.renorm) / densityScale) for i in LayerAverageDensity]
-        scaledMantleDensity = 0.
+        scaledMantleDensity = (self.hotMantleDensity - self.renorm) / densityScale
         #viscous time scale
         timeScale = self.viscosityScale/(densityScale* self.lengthScale * self.gravityScale)
         stokesstressScale = densityScale* self.gravityScale * self.lengthScale

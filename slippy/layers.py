@@ -17,13 +17,15 @@ from shapely.geometry import MultiPoint
 from shapely.geometry import Point
 import underworld as uw
 
-def create_layers(layer_depths,  trench_shp, Rc = 180, angle = 70, Zmax = 250, kms_to_model = 111. ):
+def create_layers(layer_depths,  trench_shp, Rc = 180, angle = 70, Zmax = 250, lengthscale = 111000., zmax = 10, zmin = 0 ):
     """
-    This function creates functions representing slabs at depth, 
+    Functionto that creates functions representing slabs at depth, 
     based on radius of curvature, slope at which the slab becomes straight
-    maximum depth (of the top surface), etc. It returns depths in kilometers.
-    The x, y coordinates are assumed to be in degrees. If using different model scaling, \
-    this could be changed using kms_to_model
+    maximum depth (of the top surface), etc. 
+    Layer depths are given in kilometers. It returns depths in model units.
+    The x, y coordinates are assumed to be in degrees (lat, lon), but are used in a cartesian sense.
+    Hence, it's best if the model is situated near (0,0)
+
     
     This function will create layers that extend from the trench in the "y" direction. 
     It is assumed that the reference frame has been shifted so that relative plate motion is North-South, 
@@ -32,24 +34,19 @@ def create_layers(layer_depths,  trench_shp, Rc = 180, angle = 70, Zmax = 250, k
     Depths are considered positive
     """
     from scipy import interpolate
-    #Create an interpolant for the location of the trench
-    tpts = list(trench_shp.coords)
-    px = [i[0] for i in tpts]
-    py = [i[1] for i in tpts]
-    f = interpolate.interp1d(px, py, kind='linear', axis=-1) #Linear interp just goes through the points exactly
-    """
-    Here we want a function that returns a function 
-    The function returned is a function of x,y, f(x, y)
-    """
-    [i/kms_to_model for i in layer_depths]
+    #Convert to model coordinates:
+    mRc = Rc*1000./lengthscale
     def create_surface(ldepth):
-        rl = Rc - ldepth  #adjusted radius of curvature. 
+        #Within this additional function model-space coordinates are assumed
+        rl = mRc - ldepth  #adjusted radius of curvature.
         ang_rad = angle*(math.pi/180)
-        slope = math.tan(ang_rad)  
-        z_ec = math.sqrt((rl**2/ ((slope**2)+1))) #km
-        y_ec = math.sqrt(rl**2 - z_ec**2)            #km
-        Z_ec = abs(z_ec - Rc)  / 111.                 #model units, correct for the fact that z at theta = 0 is max, here we use Rc, not rl
-        Y_ec = y_ec / 111.                            #model units          
+        slope = math.tan(ang_rad)
+        if slope > 0:
+            slope = slope*-1.
+        else:
+            slope = slope
+        z_ec = math.sqrt((rl**2/ ((slope**2)+1)))
+        y_ec = math.sqrt(rl**2 - z_ec**2)            
         """
         Here we define the depth function f(x,y)
         """
@@ -59,31 +56,29 @@ def create_layers(layer_depths,  trench_shp, Rc = 180, angle = 70, Zmax = 250, k
             py = [i[1] for i in tpts]
             f = interpolate.interp1d(px, py, kind='linear', axis=-1)
             px = x
-            YaC = abs(y - float(f(px)))
+            YaC = abs(y - float(f(px)))            #Model units
             #print "YaC is %s." % YaC
-            if YaC < Y_ec:              
-                Ykm = YaC*111.
-                #print "Rl is %s." % rl
-                #print "Ykm is %s." % Ykm
-                fd1 = math.sqrt(rl**2 - Ykm**2)  
-                fd2 = abs(fd1 - rl)                  #correct for the fact that z at theta = 0 is max, here we use rl
-                #print "fd2 is %s." % fd2
-                fd3 = fd2 + ldepth                 #add the layer depth to get the total depth
-                fdepth = fd3/111.
-            if YaC > Y_ec:
-                YaS = abs(y - float(f(px))) - Y_ec    #this guy is messing stuff up
-                #YaS = y - float(f(px)) - Y_ec    #this guy is messing stuff up
-                #print "Slope is %s." % slope
-                fdepth = (YaS * slope) + Z_ec     #not sure about ldepth
-                
-            return fdepth*-111.
+            if YaC < y_ec:              
+                #Ykm = YaC*111.
+                ZaC = math.sqrt(rl**2 - YaC**2) #absolute height from refernce depth of rl
+                if ZaC > mRc:                   #Function is zero if above surface
+                    fdepth = mRc
+                else:
+                    fdepth = ZaC                #absolute height from refernce depth of rl
+
+            else:
+                YaS = abs(y - float(f(px))) - y_ec    #distance from the curved - straight crossover point
+                fdepth = z_ec + (YaS * slope)     #not sure about ldepth          
+            return fdepth + zmax - mRc
         return surface
         
     """
     Make the layers:
     """
+    mdep = []
+    [mdep.append(i*1000./lengthscale) for i in layer_depths]
     f_basket = []
-    for dep in layer_depths:
+    for dep in mdep:
         f = create_surface(dep)
         f_basket.append(f)
     return f_basket
