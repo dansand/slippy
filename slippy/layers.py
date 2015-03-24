@@ -118,7 +118,7 @@ def create_slab_region(trench_shp,direction = 1, Rc = 180, angle = 70, Zmax = 25
         pass
     elif direction == -1:
         tdis = tdis*-1.
-    #print tdis
+    print tdis
     #Move trench northward by y. 
     trench = trench_shp
     #trench1 = translate(trench, xoff=0.0, yoff=my, zoff=0.0)
