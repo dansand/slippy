@@ -86,7 +86,7 @@ def create_layers(layer_depths,  trench_shp, Rc = 180, angle = 70, Zmax = 250, l
     
     
     
-def create_slab_region(trench_shp,direction = 1, Rc = 180, angle = 70, Zmax = 250, kms_to_model = 111.):
+def create_slab_region(trench_shp,direction = 1, Rc = 180, angle = 70, Zmax = 250, lengthscale = 111000.):
     """
     This function creates creates a polygon that covers the region
     where the slab will be interpolated, i.e. from the trench to the point
@@ -95,25 +95,32 @@ def create_slab_region(trench_shp,direction = 1, Rc = 180, angle = 70, Zmax = 25
     Angle after which the slab is flat
     Zmax: the deepest part of the (top) slab
     """
-
+    mZ = Zmax*1000./lengthscale
+    mRc = Rc*1000./lengthscale
     ang_rad = angle*(math.pi/180)
-    slope = math.tan(ang_rad)  
-    z_ec = math.sqrt((Rc**2/ ((slope**2)+1))) #km
-    y_ec = math.sqrt(Rc**2 - z_ec**2)            #km
-    Z_ec = abs(z_ec - Rc)  / kms_to_model                 #model units, correct for the fact that z at theta = 0 is max, here we use Rc, not rl
-    Y_ec = y_ec / kms_to_model
+    slope = math.tan(ang_rad)
+    if slope > 0:
+        slope = slope*-1.
+    else:
+        slope = slope
+    #print slope
+    z_ec = math.sqrt((mRc**2/ ((slope**2)+1)))
+    y_ec = math.sqrt(mRc**2 - z_ec**2)
+    print y_ec, z_ec
     
     #work out northward distance covering the straight part of the slab
-    tdep = Zmax - y_ec
+    print mZ
+    if mZ >= z_ec:
+        tdep = mZ - (mRc - z_ec)
+    else:
+        tdep = 0
     y2 = abs(tdep / slope)
-    my2 = y2 / 111.
-    
-    tdis = my2 + Y_ec                      #model units
+    tdis = y2 + y_ec                      #model units
     if direction == 1:
         pass
     elif direction == -1:
         tdis = tdis*-1.
-    print tdis
+    #print tdis
     #Move trench northward by y. 
     trench = trench_shp
     #trench1 = translate(trench, xoff=0.0, yoff=my, zoff=0.0)
