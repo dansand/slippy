@@ -17,7 +17,7 @@ from shapely.geometry import MultiPoint
 from shapely.geometry import Point
 import underworld as uw
 
-def create_layers(layer_depths,  trench_shp, Rc = 180, angle = 70, Zmax = 250, lengthscale = 111000., zmax = 10, zmin = 0 ):
+def create_layers(layer_depths,  trench_shp, Rc = 180, angle = 70, Zmax = 250, lengthscale = 111000., zmax = 10, zmin = 0, slippy_width = 20):
     """
     Functionto that creates functions representing slabs at depth, 
     based on radius of curvature, slope at which the slab becomes straight
@@ -75,6 +75,8 @@ def create_layers(layer_depths,  trench_shp, Rc = 180, angle = 70, Zmax = 250, l
     """
     Make the layers:
     """
+    #Add the Slippy layer
+    layer_depths.insert(0, float(-1*slippy_width))
     mdep = []
     [mdep.append(i*1000./lengthscale) for i in layer_depths]
     f_basket = []
@@ -83,8 +85,7 @@ def create_layers(layer_depths,  trench_shp, Rc = 180, angle = 70, Zmax = 250, l
         f_basket.append(f)
     return f_basket
     
-    
-    
+       
     
 def create_slab_region(trench_shp,direction = 1, Rc = 180, angle = 70, Zmax = 250, lengthscale = 111000.):
     """
@@ -188,7 +189,7 @@ def map_flat_layers(position, dim, lon = [], lat = [], shapes=[], layers = [], u
         mat_counter = 0
         for i in range(0, len(shapes)):
             if i == 0:
-                mat_counter = 0
+                mat_counter = 3
             else: 
                 mat_counter = mat_counter + ((len(layers[i-1])-1))
             mat_index = mat_counter
@@ -271,7 +272,7 @@ def map_slab_layers(ii, mat_indx_var, position, dim, cutoff  = 250, lon = [], la
         mat_counter = 0
         for i in range(0, len(shapes)):
             if i == 0:
-                mat_counter = 0
+                mat_counter = 2
             else: 
                 mat_counter = mat_counter + ((len(layers[i-1])-1))
             mat_index = mat_counter

@@ -47,7 +47,7 @@ class Materials(object):
     >>> test = materials.Materials(age = 120, crustThickness = 2)
     """
     def __init__(self, age = 80, crustThickness = 6, renorm= 2700, cooling_model="HSCM",
-                 layers = [25,50,75 ,100,200, 1000000],
+                 layers = [25, 50,75 ,100],
                  scales = [110000,1e20,10],
                  rock_prop=[2900, 3400,3500],
                  thermal_prop=[3.0e-5, 1e-6, 1300.0],
@@ -65,7 +65,6 @@ class Materials(object):
         self.crustThickness = crustThickness
         self.renorm = renorm
         self.cooling_model = cooling_model
-        self.layers = layers
         self.scales = scales
         self.thermal_prop = thermal_prop
         self.visc_prop = visc_prop
@@ -100,6 +99,12 @@ class Materials(object):
         self.viscosityTruncation = visc_prop[2]
         self.viscosityMinimum = visc_prop[3]
         self.referenceViscosity = utils.viscosity(self.Tint+self.TC2K,100*self.Kms, self.E0, self.V0, self.R0);
+        ####Add some deeper values to layers:
+        #This is a legacy of how the initial plotting stuff as done, needs to be fixed
+        self.layers = layers
+        self.layers.append(200)
+        self.layers.append(100000)
+        
         
     def write_properties_dict(self, out_name):
         import pickle
@@ -225,6 +230,7 @@ class Materials(object):
         scale = self.scales
         dodge = min(6, len(scale))
         litho_dict["scalingFactors"] = scale[0:dodge+1]
+        
 
 
         
