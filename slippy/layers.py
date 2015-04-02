@@ -75,14 +75,15 @@ def create_layers(layer_depths,  trench_shp, Rc = 180, angle = 70, Zmax = 250, l
     """
     Make the layers:
     """
+    fdepths = list(layer_depths) #Deep copy
     #Add the zero depth layer
-    layer_depths.insert(0, 0.)
+    fdepths.insert(0, 0.)
     #Add the Slippy layer
-    layer_depths.insert(0, float(-1*slippy_width))
-    if len(layer_depths) == 2:
+    fdepths.insert(0, float(-1*slippy_width))
+    if len(fdepths) == 2:
         layer_depths.reverse
     mdep = []
-    [mdep.append(i*1000./lengthscale) for i in layer_depths]
+    [mdep.append(i*1000./lengthscale) for i in fdepths]
     f_basket = []
     for dep in mdep:
         f = create_surface(dep)
@@ -223,7 +224,7 @@ def map_flat_layers(position, dim, lon = [], lat = [], shapes=[], layers = [], u
     
     
     
-def map_slab_layers(ii, mat_indx_var, position, dim, cutoff  = 250, lon = [], lat = [], shapes=[], layers = [], mantle_buffer = [10,-10,10,-10], stable_indx = 2.):
+def map_slab_layers(ii, mat_indx_var, position, dim, cutoff  = 250, lon = [], lat = [], shapes=[], layers = [], mantle_buffer = [10,-10,10,-10], stable_indx = 2., slippy_indx = 3.):
     """
     This function loops through shapes (Shapely Polygons) and layers, and assigns material indexes.
     """
@@ -268,30 +269,29 @@ def map_slab_layers(ii, mat_indx_var, position, dim, cutoff  = 250, lon = [], la
     elif lat < mantle_buffer[3]:
         mat_index = int(uw.swarms.tools.SwarmVariable_GetValueAt(mat_indx_var, ii)[0])
     #use shapely point class
-    #pyGplates to be used in near-future
     else: 
         pt = Point(lon, lat)
         found_shape = 0
         mat_index = 0
         mat_counter = 0
         for i in range(0, len(shapes)):
-            if i == 0:
-                mat_counter = 3
-            else: 
-                mat_counter = mat_counter + ((len(layers[i-1])-1))
+            #Mat counter starts at zero and adds the number of layers corresponding to each shape loop...
+            mat_counter = mat_counter + ((len(layers[i])-2)) 
             mat_index = mat_counter
             found_layer = 0       
             if found_shape ==1:
                 break
             elif shapes[i].contains(pt):
+                found_shape == 1
                 #First check if the slab layers are intended as "stabilizing regions"
                 if len(layers[i])==2:
                     if layers[i][0](lon,lat) >= depth > layers[i][1](lon,lat):
                         mat_index = stable_indx
+                        break
                     else:
-                        mat_index = int(uw.swarms.tools.SwarmVariable_GetValueAt(mat_indx_var, ii)[0])                  
+                        mat_index = int(uw.swarms.tools.SwarmVariable_GetValueAt(mat_indx_var, ii)[0])   
+                        break               
                 else:
-                    found_shape == 1
                     found_layer = 0 #reset after layer loop
                     for j in range(0, len(layers[i][:-1])):   #This -2 thing would change depending on how many layers 
                         k = j+1
@@ -299,16 +299,27 @@ def map_slab_layers(ii, mat_indx_var, position, dim, cutoff  = 250, lon = [], la
                             break
                         elif layers[i][j](lon,lat) >= depth > layers[i][k](lon,lat):
                             #print(layers[i][j](lon,lat))
-                            mat_index = mat_index
-                            found_layer = 1
-                            break
+                            #The first layer is always the slippy layer, assign appropriate index, dont change mat_index
+                            if j == 0:
+                                mat_index = slippy_indx
+                                found_layer = 1
+                                break
+                            else:
+                                mat_index = mat_index
+                                found_layer = 1
+                                break
                         elif k == len(layers[i]) -1:
                             mat_index = int(uw.swarms.tools.SwarmVariable_GetValueAt(mat_indx_var, ii)[0])
                             found_layer = 1
                             break
                         else:
-                            mat_index = mat_index +1   
+                            #Only increase mat_index once past "slippy" layer
+                            if j == 0:            
+                                mat_index = mat_index
+                            else:
+                                mat_index = mat_index +1   
                     break 
+            #This is basically "do nothing return go to next item in shapes"
             else:
                 mat_index = int(uw.swarms.tools.SwarmVariable_GetValueAt(mat_indx_var, ii)[0])
             

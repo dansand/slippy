@@ -428,7 +428,7 @@ class Materials(object):
 #########################
 
 
-def uw_rheologies(uwdict, materials=[], lm = [1,100], slippy = [1,1,1], stable =[0.9, 10]):
+def uw_rheologies(uwdict, materials=[], lm = [1,100], slippy = [1,1,1], stable =[1., 1000]):
     """This function takes the material properties Slippy calculates, 
     and puts them into the Underworld dictionary as RheologyMaterial Types:
     Currently works for Density, viscosity, Von Mises yielding
@@ -488,8 +488,21 @@ def uw_rheologies(uwdict, materials=[], lm = [1,100], slippy = [1,1,1], stable =
             mat_names.append(global_name)
     uw.dictionary.SetDictionary(uwdict)
     return mat_names
+    
+    
+    
+    
 
-
+def register(mat_list, uwdict, context):
+    """
+    By all accounts, dynamically assigning variables like this is a bad thing
+    """
+    mapDictionary = {}
+    for name in mat_list:
+        indx = mat_list.index(name)
+        lname = "layer" + str(indx)
+        globals()[lname] = uw.libUnderworld.PICellerator.Materials_Register_GetByName( context.materials_Register, name )
+    uw.dictionary.SetDictionary(uwdict)
         
              
         
