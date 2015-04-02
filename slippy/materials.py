@@ -13,8 +13,8 @@ Materials class of slippy.
 
 import math
 import numpy as np
-
 from slippy import utils
+import underworld as uw
 
 
 
@@ -421,6 +421,73 @@ class Materials(object):
         out = viscStress[2425:2450]
         
         return LayerBase, LayerTop, out
+        
+        
+#########################
+#Other functions
+#########################
+
+
+def uw_rheologies(uwdict, materials=[], lm = [1,100], slippy = [1,1,1], stable =[0.9, 10]):
+    """This function takes the material properties Slippy calculates, 
+    and puts them into the Underworld dictionary as RheologyMaterial Types:
+    Currently works for Density, viscosity, Von Mises yielding
+    """
+    #####
+    #Helper functions:
+    #####
+    def make_names(index):
+        i = index
+        gi = i + 1
+        gn = "Layer" + str(gi)
+        vn = "viscosity" + str(gi)
+        yn = "vonMises" + str(gi)
+        return gi, gn, vn, yn
+    ##Main fucntion
+    int_dict = uwdict
+    mat_names = []
+    global_indx = -1
+    for i in range(len(materials)):
+        #Get relavent slippy materials dict
+        mat_dict = materials[i]
+        #Do mantle, upper mantle, slippy
+        if i == 0:
+            global_indx, global_name, vname, yname = make_names(global_indx)
+            viscosity = uw.dictionary.UpdateDictWithComponent(uwdict, name=vname, Type="MaterialViscosity", eta0=1.)
+            uwdict["components"][global_name]={ "Type":"RheologyMaterial", "Shape":"backgroundShape", "density":float(mat_dict['otherParams'][2]), "Rheology":[vname]}
+            mat_names.append(global_name)
+            #add lower mantle rheology
+            global_indx, global_name, vname, yname = make_names(global_indx)
+            viscosity = uw.dictionary.UpdateDictWithComponent(uwdict, name=vname, Type="MaterialViscosity", eta0=lm[1]*1.)
+            uwdict["components"][global_name]={ "Type":"RheologyMaterial", "Shape":"backgroundShape", "density":float(lm[0]*mat_dict['otherParams'][2]), "Rheology":[vname]}
+            mat_names.append(global_name)
+            #Add stable rheology
+            global_indx, global_name, vname, yname = make_names(global_indx)
+            viscosity = uw.dictionary.UpdateDictWithComponent(uwdict, name=vname, Type="MaterialViscosity", eta0=stable[1]*1.)
+            uwdict["components"][global_name]={ "Type":"RheologyMaterial", "Shape":"backgroundShape", "density":float(stable[0]*mat_dict['otherParams'][2]), "Rheology":[vname]}
+            mat_names.append(global_name)
+            #add slippy rheology    
+            global_indx, global_name, vname, yname = make_names(global_indx)
+            viscosity = uw.dictionary.UpdateDictWithComponent(uwdict, name=vname, Type="MaterialViscosity", eta0=slippy[1]*1.)
+            if len(slippy)==3:
+                #If yielding is specified in Slippy layer...the yielding is chosen as a fraction (slippy[2]) of the yielding of the slab top layer: mat_dict["layer0"]
+                yielding = uw.dictionary.UpdateDictWithComponent(int_dict, name=yname, Type="VonMises", StrainRateField="tensorSymmetricPartGradientVelocityField", cohesion=float(slippy[2]*mat_dict["layer0"]["AverageStrength"]),MaterialPointsSwarm="materialSwarm")
+                uwdict["components"][global_name]={ "Type":"RheologyMaterial", "Shape":"backgroundShape", "density":float(slippy[0]*mat_dict['otherParams'][2]), "Rheology":[vname,yname]}
+                mat_names.append(global_name)
+                #break
+            else:
+                uwdict["components"][global_name]={ "Type":"RheologyMaterial", "Shape":"backgroundShape", "density":float(slippy[0]*mat_dict['otherParams'][2]), "Rheology":[vname]}
+                mat_names.append(global_name)        
+        for j in range(len(mat_dict['layers']) - 1):
+            global_indx, global_name, vname, yname = make_names(global_indx)
+            layer_name = "layer" + str(j)
+            #define yielding properties
+            yielding = uw.dictionary.UpdateDictWithComponent(int_dict, name=yname, Type="VonMises", StrainRateField="tensorSymmetricPartGradientVelocityField", cohesion=float(mat_dict[layer_name]["AverageStrength"]),MaterialPointsSwarm="materialSwarm")
+            viscosity = uw.dictionary.UpdateDictWithComponent(uwdict, name=vname, Type="MaterialViscosity", eta0=float(mat_dict[layer_name]["AverageVisc"]))
+            uwdict["components"][global_name]={ "Type":"RheologyMaterial", "Shape":"backgroundShape", "density":float(mat_dict[layer_name]["AverageDensity"]), "Rheology":[vname,yname]}
+            mat_names.append(global_name)
+    uw.dictionary.SetDictionary(uwdict)
+    return mat_names
 
 
         
