@@ -428,10 +428,13 @@ class Materials(object):
 #########################
 
 
-def uw_rheologies(uwdict, materials=[], lm = [1,100], slippy = [1,1,1], stable =[1., 1000]):
+def uw_rheologies(uwdict, materials=[], lm = [1,100], slippy = [1,1,1], stable =[1., 1000], exclude_bottom = True):
     """This function takes the material properties Slippy calculates, 
     and puts them into the Underworld dictionary as RheologyMaterial Types:
-    Currently works for Density, viscosity, Von Mises yielding
+    Currently works for Density, viscosity, Von Mises yielding.
+    
+    Default is to exclude yielding behaviour from the bottom layer of any materials (i.e. materials created with slippy materials.Materials)
+    Switch to exclude_bottom = False if you want yielding in all layers
     """
     #####
     #Helper functions:
@@ -443,7 +446,9 @@ def uw_rheologies(uwdict, materials=[], lm = [1,100], slippy = [1,1,1], stable =
         vn = "viscosity" + str(gi)
         yn = "vonMises" + str(gi)
         return gi, gn, vn, yn
-    ##Main fucntion
+    #####
+    #Main function:
+    #####
     int_dict = uwdict
     mat_names = []
     global_indx = -1
@@ -477,16 +482,26 @@ def uw_rheologies(uwdict, materials=[], lm = [1,100], slippy = [1,1,1], stable =
                 #break
             else:
                 uwdict["components"][global_name]={ "Type":"RheologyMaterial", "Shape":"backgroundShape", "density":float(slippy[0]*mat_dict['otherParams'][2]), "Rheology":[vname]}
-                mat_names.append(global_name)        
+                mat_names.append(global_name)       
         for j in range(len(mat_dict['layers']) - 1):
-            global_indx, global_name, vname, yname = make_names(global_indx)
-            layer_name = "layer" + str(j)
-            #define yielding properties
-            yielding = uw.dictionary.UpdateDictWithComponent(int_dict, name=yname, Type="VonMises", StrainRateField="tensorSymmetricPartGradientVelocityField", cohesion=float(mat_dict[layer_name]["AverageStrength"]),MaterialPointsSwarm="materialSwarm")
-            viscosity = uw.dictionary.UpdateDictWithComponent(uwdict, name=vname, Type="MaterialViscosity", eta0=float(mat_dict[layer_name]["AverageVisc"]))
-            uwdict["components"][global_name]={ "Type":"RheologyMaterial", "Shape":"backgroundShape", "density":float(mat_dict[layer_name]["AverageDensity"]), "Rheology":[vname,yname]}
-            mat_names.append(global_name)
+            if exclude_bottom:
+                if j != (len(mat_dict['layers']) - 2):
+                    global_indx, global_name, vname, yname = make_names(global_indx)
+                    layer_name = "layer" + str(j)
+                    #define yielding properties
+                    yielding = uw.dictionary.UpdateDictWithComponent(int_dict, name=yname, Type="VonMises", StrainRateField="tensorSymmetricPartGradientVelocityField", cohesion=float(mat_dict[layer_name]["AverageStrength"]),MaterialPointsSwarm="materialSwarm")
+                    viscosity = uw.dictionary.UpdateDictWithComponent(uwdict, name=vname, Type="MaterialViscosity", eta0=float(mat_dict[layer_name]["AverageVisc"]))
+                    uwdict["components"][global_name]={ "Type":"RheologyMaterial", "Shape":"backgroundShape", "density":float(mat_dict[layer_name]["AverageDensity"]), "Rheology":[vname,yname]}
+                    mat_names.append(global_name)
+                else:
+                    global_indx, global_name, vname, yname = make_names(global_indx)
+                    layer_name = "layer" + str(j)
+                    #define yielding properties
+                    viscosity = uw.dictionary.UpdateDictWithComponent(uwdict, name=vname, Type="MaterialViscosity", eta0=float(mat_dict[layer_name]["AverageVisc"]))
+                    uwdict["components"][global_name]={ "Type":"RheologyMaterial", "Shape":"backgroundShape", "density":float(mat_dict[layer_name]["AverageDensity"]), "Rheology":[vname]}
+                    mat_names.append(global_name)             
     uw.dictionary.SetDictionary(uwdict)
+    print(uwdict["components"][global_name]) 
     return mat_names
     
     
