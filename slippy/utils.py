@@ -12,6 +12,8 @@ Some utility functionality.
 
 import math
 import numpy as np
+import underworld as uw
+import underworld.shapes as shape
 
 ###################
 #Rheology and temperture relationships
@@ -49,3 +51,19 @@ def layers_rescale(length_scale,layers, max_model_vert=10):
     else:
         pass
     return scaled_layers 
+    
+def swarm_fom_box(uwdict, Shapely, num, name="dummy_name"):
+    """
+    This function takes a shapely box and a swarm,
+    used for 2d swarms on the surface
+    Needs to be extended to arbitary polygons
+    
+    """
+    box_name = name + "_box"
+    shape.setup.boxCreate(componentName=box_name , startList=[Shapely.bounds[0],Shapely.bounds[1],9.5], endList=[Shapely.bounds[2],Shapely.bounds[3],10])
+    layout_name = name + "_layout"
+    uwdict["components"][layout_name] = dict([('Type', 'WithinShapeParticleLayout'), ('shape', box_name ), ('totalInitialParticles', num)])
+    swarm_name = name + "_swarm"
+    uw.swarms.tools.TracerSwarmCreate(particleLayout=None, componentName=swarm_name, meshName='linearMesh')
+    uwdict["components"][swarm_name]['ParticleLayout'] = layout_name
+    uw.dictionary.SetDictionary(uwdict)

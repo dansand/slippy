@@ -388,7 +388,7 @@ class Materials(object):
         
         ##Add the combined strength plot
         #get the viscous part of the stress
-        vel = 0.06 #velocity in m/y
+        vel = 0.05 #velocity in m/y
         vels = vel / (365*24*60*60) #velocity in m per second
         visct = [(10**i)*self.viscosityScale for i in logViscosity_tr]
         visc = [(10**i)*self.viscosityScale for i in logViscosity]
@@ -409,7 +409,8 @@ class Materials(object):
         combstrengthPlot.plot(cStrengtht,depth, color='black', linestyle='dashed', linewidth=2, label='')
         combstrengthPlot.set_xticks([0,500, 1000,1500])
         combstrengthPlot.invert_yaxis()
-        combstrengthPlot.set_ylim(150,0)
+        combstrengthPlot.set_xlabel('Plate strength at trench (Mpa)')
+        #combstrengthPlot.set_ylim(150,0)
         
         
 
@@ -459,8 +460,10 @@ def uw_rheologies(uwdict, materials=[], lm = [1,100], slippy = [1,1,1], stable =
         if i == 0:
             global_indx, global_name, vname, yname = make_names(global_indx)
             viscosity = uw.dictionary.UpdateDictWithComponent(uwdict, name=vname, Type="MaterialViscosity", eta0=1.)
+            print(uwdict["components"][vname])
             uwdict["components"][global_name]={ "Type":"RheologyMaterial", "Shape":"backgroundShape", "density":float(mat_dict['otherParams'][2]), "Rheology":[vname]}
             mat_names.append(global_name)
+            print(uwdict["components"][global_name])
             #add lower mantle rheology
             global_indx, global_name, vname, yname = make_names(global_indx)
             viscosity = uw.dictionary.UpdateDictWithComponent(uwdict, name=vname, Type="MaterialViscosity", eta0=lm[1]*1.)
