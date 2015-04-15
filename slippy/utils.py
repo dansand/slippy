@@ -76,9 +76,9 @@ def midswarm(minX, maxX, minY, maxY, shapes=[], num=10000, depth = 9.545):
     """
     import numpy as np
     from shapely.geometry import Point
-    ####
+    #####
     #Create the initial swarm
-    ####
+    #####
     xs = np.random.uniform(minX,maxX, num)
     ys = np.random.uniform(minY,maxY, num)
     zs = np.array([num, 1])
