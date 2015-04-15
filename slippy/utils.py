@@ -67,3 +67,34 @@ def swarm_fom_box(uwdict, Shapely, num, name="dummy_name"):
     uw.swarms.tools.TracerSwarmCreate(particleLayout=None, componentName=swarm_name, meshName='linearMesh')
     uwdict["components"][swarm_name]['ParticleLayout'] = layout_name
     uw.dictionary.SetDictionary(uwdict)
+    
+def midswarm(minX, maxX, minY, maxY, shapes=[], num=10000, depth = 9.545):
+    """
+    This defines a swarm at a given depth across the entire domain, 
+    then separates into individual domains. 
+    The way the model domain is passed is in very ugly, this needs to be standardised in V.2
+    """
+    import numpy as np
+    from shapely.geometry import Point
+    ####
+    #Create the initial swarm
+    ####
+    xs = np.random.uniform(minX,maxX, num)
+    ys = np.random.uniform(minY,maxY, num)
+    zs = np.array([num, 1])
+    zs = np.zeros(num)
+    zs.fill(depth)
+    mswarm = np.column_stack((xs,ys,zs))
+    ####
+    #Separate swarm on shapes
+    ####
+    final_swarms = []
+    for pol in shapes:
+        indx_list = []
+        for i in range(0, len(mswarm[:,0])):
+            pt = Point((mswarm[i,0],mswarm[i,1]))
+            if pol.contains(pt):
+                indx_list.append(i)
+        swarm = mswarm[indx_list,:]
+        final_swarms.append(swarm)
+    return final_swarms
