@@ -14,6 +14,7 @@ import math
 import numpy as np
 import underworld as uw
 import underworld.shapes as shape
+from slippy import rotations
 
 ###################
 #Rheology and temperture relationships
@@ -136,3 +137,16 @@ def rotate_grid_points(lon, lat, data, rm):
         flats = alats.reshape(lon.shape)
         out = np.dstack((flons, flats, data))
         return out
+        
+def spatial_mask(minX, maxX, minY, maxY, xy_array):
+    """
+    Simple function to get rid of values outside bounding box.
+    No error checking...
+    """
+    indx_list = []
+    for i in range(0,len(xy_array[:,0])):
+        if minX < xy_array[i,0] < maxX and minY < xy_array[i,1] < maxY:
+            indx_list.append(i)
+    out = xy_array[indx_list,:]
+    return out  
+        
