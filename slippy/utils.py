@@ -98,3 +98,41 @@ def midswarm(minX, maxX, minY, maxY, shapes=[], num=10000, depth = 9.545):
         swarm = mswarm[indx_list,:]
         final_swarms.append(swarm)
     return final_swarms
+    
+    
+    
+def rotate_grid_points(lon, lat, data, rm):
+    '''
+    A function to rotate geographic data, 
+    given a rotation matrix rm. Works for arbitarry points, 
+    as well as gridded data.
+    '''
+    #rotations.rotate_lat_lon(lat[n], lon[n], ra, ang)
+    #convert rm to euler:
+    ra, ang = rotations._get_axis_and_angle_from_rotation_matrix(rm)
+    #first the case of arbitrary points
+    if len(lon.shape) == len(lat.shape) == 1:
+        nlons = []
+        nlats = []
+        for n in range(0, len(lat)):
+            temp = rotations.rotate_lat_lon(lat[n], lon[n], ra, ang)
+            nlons.append(temp[1])
+            nlats.append(temp[0])
+        alons = np.asarray(nlons)
+        alats = np.asarray(nlats)        
+        out = np.column_stack((alons, alats, data))
+        return out
+    elif len(lon.shape) == len(lat.shape) > 1:
+        nlons = []
+        nlats = []
+        for i in range(0, lat.shape[0]):
+            for j in range(0, lon.shape[1]):
+                temp = rotations.rotate_lat_lon(lat[i,j], lon[i,j], ra, ang)
+                nlons.append(temp[1])
+                nlats.append(temp[0])
+        alons = np.asarray(nlons)
+        alats = np.asarray(nlats)
+        flons = alons.reshape(lon.shape)
+        flats = alats.reshape(lon.shape)
+        out = np.dstack((flons, flats, data))
+        return out
