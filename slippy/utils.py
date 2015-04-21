@@ -146,16 +146,16 @@ def spatial_mask(minX, maxX, minY, maxY, minZ, maxZ, xyz_array):
     """
     indx_list = []
     if xyz_array.shape[1] == 2:
-        for i in range(0,len(xy_array[:,0])):
-            if minX < xy_array[i,0] < maxX and minY < xy_array[i,1] < maxY:
+        for i in range(0,len(xyz_array[:,0])):
+            if minX <= xyz_array[i,0] <= maxX and minY <= xyz_array[i,1] <= maxY:
                 indx_list.append(i)
-        out = xy_array[indx_list,:]
+        out = xyz_array[indx_list,:]
         return out
-    elif:
-        for i in range(0,len(xy_array[:,0])):
-            if minX < xy_array[i,0] < maxX and minY < xy_array[i,1] < maxY and minZ < xy_array[i,2] < maxZ:
+    else:
+        for i in range(0,len(xyz_array[:,0])):
+            if minX <= xyz_array[i,0] <= maxX and minY <= xyz_array[i,1] <= maxY and minZ <= xyz_array[i,2] <= maxZ:
                 indx_list.append(i)
-        out = xy_array[indx_list,:]
+        out = xyz_array[indx_list,:]
         return out
         
     

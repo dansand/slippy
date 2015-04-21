@@ -139,7 +139,7 @@ def create_slab_region(trench_shp,direction = 1, Rc = 180, angle = 70, Zmax = 25
         
     
     
-def map_slab_layers(ii, mat_indx_var, position, dim, cutoff  = 250, lon = [], lat = [], shapes=[], layers = [], mantle_buffer = [10,-10,10,-10], stable_indx = 2., slippy_indx = 3.):
+def map_slab_layers(ii, mat_indx_var, position, dim, cutoff  = 250, lon = [], lat = [], shapes=[], layers = [], mantle_buffer = [10,-10,10,-10], stable_indx = 2., slippy_indx = 4.):
     """
     This function loops through shapes (Shapely Polygons) and layers, and assigns material indexes.
     """
@@ -188,7 +188,7 @@ def map_slab_layers(ii, mat_indx_var, position, dim, cutoff  = 250, lon = [], la
         pt = Point(lon, lat)
         found_shape = 0
         mat_index = 0
-        mat_counter = 0
+        mat_counter = 1
         for i in range(0, len(shapes)):
             #Mat counter starts at zero and adds the number of layers corresponding to each shape loop...
             mat_counter = mat_counter + ((len(layers[i])-2)) 
@@ -241,7 +241,7 @@ def map_slab_layers(ii, mat_indx_var, position, dim, cutoff  = 250, lon = [], la
     return int(mat_index)
     
     
-def map_flat_layers(position, dim, lon = [], lat = [], shapes=[], layers = [], upper_mantle_index=0, lower_mantle_index=1, lower_mantle_depth = 4, mantle_buffer = [10,-10,10,-10], slippy_indx = 3,transforms=False):
+def map_flat_layers(position, dim, lon = [], lat = [], shapes=[], layers = [], upper_mantle_index=0, lower_mantle_index=1, lower_mantle_depth = 4, mantle_buffer = [10,-10,10,-10], slippy_indx = 4,transforms=False):
     """
     This function loops through shapes (Shapely Polygons) and layers, and assigns material indexes.
     """
@@ -277,7 +277,10 @@ def map_flat_layers(position, dim, lon = [], lat = [], shapes=[], layers = [], u
     #any points outside mantle buffer become upper mantle   
     #any point beneath upper mantle become lower mantle
     if depth < lower_mantle_depth:
-        mat_index = lower_mantle_index     
+        mat_index = lower_mantle_index
+    #any point above 10 becomes Sticky air
+    elif depth > 10:
+        mat_index = 3     
     elif lon > mantle_buffer[0]:
         mat_index = upper_mantle_index
     elif lon < mantle_buffer[1]:
@@ -295,7 +298,7 @@ def map_flat_layers(position, dim, lon = [], lat = [], shapes=[], layers = [], u
         mat_counter = 0
         for i in range(0, len(shapes)):
             if i == 0:
-                mat_counter = 4
+                mat_counter = 5
             else: 
                 mat_counter = mat_counter + ((len(layers[i-1])-1))
             mat_index = mat_counter
