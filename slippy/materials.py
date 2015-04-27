@@ -124,11 +124,11 @@ class Materials(object):
         logViscosity_d = []
         LayerBase  = self.layers 
         LayerTop = [0] + LayerBase[0:len(LayerBase)-1]
-        LayerAverageTemp = [0,0,0,0,0,0]
-        LayerAverageDensity = [0,0,0,0,0,0]
-        LayerAverageStrength = [0,0,0,0,0,0]
-        LayerAverageVisc = [0,0,0,0,0,0]
-        LayerLogAverageVisc = [0,0,0,0,0,0]
+        LayerAverageTemp = [0] * (len(self.layers) +2)
+        LayerAverageDensity = [0] * (len(self.layers) +2)
+        LayerAverageStrength = [0] * (len(self.layers) +2)
+        LayerAverageVisc = [0] * (len(self.layers) +2)
+        LayerLogAverageVisc = [0] * (len(self.layers) +2)
         DensityLayerBase = [self.crustThickness,1000000]
         DensityLayer = [self.crustDensity,self.mantleDensity]
         index = 0
@@ -158,7 +158,6 @@ class Materials(object):
             # lithospheric pressure in MPa
                 lithostaticPressure.append(1.0e-6 * self.gravAcc  * (depth[index] - depth[index-1]) * self.Kms * density[index] + lithostaticPressure[index-1])
                 yieldStrength.append(self.cohesion + self.frictionCoeff * lithostaticPressure[index])
-            
             LayerAverageTemp[layer] = LayerAverageTemp[layer] + temp[index]
             LayerAverageDensity[layer] = LayerAverageDensity[layer] + density[index]
             LayerAverageVisc[layer] = LayerAverageVisc[layer] + utils.viscosity(temp[index]+self.TC2K,d*self.Kms, self.E0, self.V0, self.R0)/self.referenceViscosity
@@ -429,7 +428,7 @@ class Materials(object):
 #########################
 
 
-def uw_rheologies(uwdict, materials=[], lm = [1,100], slippy = [1,1,1], sticky = [0,-3], stable =[1., 4], exclude_bottom = True):
+def uw_rheologies(uwdict, materials=[], lm = [1,2], slippy = [1,1,1], sticky = [-3,-3], stable =[1., 4], exclude_bottom = True):
     """This function takes the material properties Slippy calculates, 
     and puts them into the Underworld dictionary as RheologyMaterial Types:
     Currently works for Density, viscosity, Von Mises yielding.
@@ -469,7 +468,7 @@ def uw_rheologies(uwdict, materials=[], lm = [1,100], slippy = [1,1,1], sticky =
             print(uwdict["components"][global_name])
             #add lower mantle rheology
             global_indx, global_name, vname, yname = make_names(global_indx)
-            viscosity = uw.dictionary.UpdateDictWithComponent(uwdict, name=vname, Type="MaterialViscosity", eta0=lm[1]*1.)
+            viscosity = uw.dictionary.UpdateDictWithComponent(uwdict, name=vname, Type="MaterialViscosity", eta0=10**lm[1])
             uwdict["components"][global_name]={ "Type":"RheologyMaterial", "Shape":"backgroundShape", "density":float(lm[0]*mat_dict['otherParams'][2]), "Rheology":[vname]}
             mat_names.append(global_name)
             #Add stable rheology
@@ -480,7 +479,7 @@ def uw_rheologies(uwdict, materials=[], lm = [1,100], slippy = [1,1,1], sticky =
             #Add sticky-air rheology
             global_indx, global_name, vname, yname = make_names(global_indx)
             viscosity = uw.dictionary.UpdateDictWithComponent(uwdict, name=vname, Type="MaterialViscosity", eta0=10**sticky[1])
-            uwdict["components"][global_name]={ "Type":"RheologyMaterial", "Shape":"backgroundShape", "density":0., "Rheology":[vname]} 
+            uwdict["components"][global_name]={ "Type":"RheologyMaterial", "Shape":"backgroundShape", "density":10**sticky[0], "Rheology":[vname]} 
             #add slippy rheology    
             global_indx, global_name, vname, yname = make_names(global_indx)
             viscosity = uw.dictionary.UpdateDictWithComponent(uwdict, name=vname, Type="MaterialViscosity", eta0=slippy[1]*1.)
