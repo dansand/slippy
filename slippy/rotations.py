@@ -603,6 +603,48 @@ def calculate_initial_compass_bearing(pointA, pointB):
  
     return compass_bearing
 
+
+    
+def rotation_matrix(angle, dim=2, axis=None):
+    '''
+    Added this as it's a bit easier to use.
+    Create a 2D or 3D rotation matrix.
+    :param: int or float as radians
+        angle of rotation
+    :param dim: 2 or 3, optional
+        dimension of rotation matrix, default is 2
+    :param axis: 1, 2 or 3, optional
+        rotation axis for 3D rotation, default is None
+    :returns: 2x2 or 3x3 rotation matrix
+    '''
+
+    if dim == 2:
+        R = [
+            [math.cos(angle), -math.sin(angle)],
+            [math.sin(angle), math.cos(angle)],
+        ]
+    elif dim == 3:
+        if axis == 1:
+            R = [
+                [1, 0, 0],
+                [0, math.cos(angle), -math.sin(angle)],
+                [0, math.sin(angle), math.cos(angle)],
+            ]
+        elif axis == 2:
+            R = [
+                [math.cos(angle), 0, math.sin(angle)],
+                [0, 1, 0],
+                [-math.sin(angle), 0, math.cos(angle)],
+            ]
+        elif axis == 3:
+            R = [
+                [math.cos(angle), -math.sin(angle), 0],
+                [math.sin(angle), math.cos(angle), 0],
+                [0, 0, 1],
+            ]
+    return np.array(R)
+
+
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
