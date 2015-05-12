@@ -191,8 +191,10 @@ def map_slab_layers(ii, mat_indx_var, position, dim, cutoff  = 250, lon = [], la
         mat_counter = 0
         for i in range(0, len(shapes)):
             #Mat counter starts at zero and adds the number of layers corresponding to each shape loop...
-            mat_counter = mat_counter + ((len(layers[i])-1)) 
-            mat_index = mat_counter
+            if i == 0:
+                mat_counter = 5
+            else: 
+                mat_counter = mat_counter + ((len(layers[i-1])-2))
             found_layer = 0       
             if found_shape ==1:
                 break
@@ -208,6 +210,7 @@ def map_slab_layers(ii, mat_indx_var, position, dim, cutoff  = 250, lon = [], la
                         break               
                 else:
                     found_layer = 0 #reset after layer loop
+                    mat_index = mat_counter
                     for j in range(0, len(layers[i][:-1])):   #This -2 thing would change depending on how many layers 
                         k = j+1
                         if found_layer == 1:

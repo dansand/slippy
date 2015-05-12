@@ -186,15 +186,18 @@ class Materials(object):
         ##############
         # Rescaling
         ##############
-        #print LayerAverageDensity
         j = len(self.layers) - 2
-        if len(self.scales) == 3:
-            densityScale =  np.mean(LayerAverageDensity[0:j]) - self.hotMantleDensity
-        else:
-            densityScale = self.scales[3]
-        print densityScale
+        #print j
+        #print LayerAverageDensity[0:j]
+        densityScale = 50.
+        #if len(self.scales) == 3:
+        #    #densityScale =  np.mean(LayerAverageDensity[0:j]) - self.hotMantleDensity
+        #    densityScale = 50.
+        #else:
+        #    densityScale = self.scales[3]
+        #print densityScale
         lds = np.mean(LayerAverageDensity[0:j]) #for the lithostatic scaling
-        print lds
+        #print lds
         #make sure no layer is less dense than the renorm value (assumes no thermal expansion in  top/crustal layer)
         #LayerAverageDensity = [max(i, self.renorm) for i in  LayerAverageDensity]
         #LayerAverageDensity = [((i - self.renorm) / densityScale) for i in LayerAverageDensity]
