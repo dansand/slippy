@@ -469,6 +469,7 @@ def uw_rheologies(uwdict, materials=[], um = [1.], lm = [1,2], slippy = [1,1,1],
         mat_dict = materials[i]
         #Do mantle, upper mantle, slippy
         if i == 0:
+            #add upper mantle rheology
             global_indx, global_name, vname, yname = make_names(global_indx)
             viscosity = uw.dictionary.UpdateDictWithComponent(uwdict, name=vname, Type="MaterialViscosity", eta0=um[0])
             print(uwdict["components"][vname])
