@@ -19,8 +19,7 @@ __version__ = "0.0.1a"
 
 
 # Main objects and functions available at the top level.
-from .domain import *
-from .rotations import *
-from .materials import *
-
-
+#from .domain import *
+#from .rotations import *
+#from .materials import *
+from .gplates import *

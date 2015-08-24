@@ -23,22 +23,22 @@ from slippy import rotations
 # rheology & temperature profile functions
 def viscosity(T,D, E0, V0, R0):
     return math.exp((E0 + V0*D)/(R0*T))
-    
+
 
 def hsct(depth,time, Tint, Tsurf, kappa):
     Th = Tsurf +(Tint-Tsurf) * math.erf(depth/(2*math.sqrt(time*kappa)))
     return Th
-    
+
 def linear_geotherm(depth, Zthick, Tint, Tsurf):
     Tl = (Tint-Tsurf)/float(Zthick)
     Tl = Tl*depth
     return Tl
-    
+
 ###################
 #General utils
 ###################
-    
-    
+
+
 def layers_rescale(length_scale,layers, max_model_vert=10):
     """
     Rescale layers or slab function to uw coordinates
@@ -51,14 +51,14 @@ def layers_rescale(length_scale,layers, max_model_vert=10):
             scaled_layers.append(out)
     else:
         pass
-    return scaled_layers 
-    
+    return scaled_layers
+
 def swarm_fom_box(uwdict, Shapely, num, name="dummy_name"):
     """
     This function takes a shapely box and a swarm,
     used for 2d swarms on the surface
     Needs to be extended to arbitary polygons
-    
+
     """
     box_name = name + "_box"
     shape.setup.boxCreate(componentName=box_name , startList=[Shapely.bounds[0],Shapely.bounds[1],9.5], endList=[Shapely.bounds[2],Shapely.bounds[3],10])
@@ -68,11 +68,11 @@ def swarm_fom_box(uwdict, Shapely, num, name="dummy_name"):
     uw.swarms.tools.TracerSwarmCreate(particleLayout=None, componentName=swarm_name, meshName='linearMesh')
     uwdict["components"][swarm_name]['ParticleLayout'] = layout_name
     uw.dictionary.SetDictionary(uwdict)
-    
+
 def midswarm(minX, maxX, minY, maxY, shapes=[], num=10000, depth = 9.545):
     """
-    This defines a swarm at a given depth across the entire domain, 
-    then separates into individual domains. 
+    This defines a swarm at a given depth across the entire domain,
+    then separates into individual domains.
     The way the model domain is passed is in very ugly, this needs to be standardised in V.2
     """
     import numpy as np
@@ -99,13 +99,13 @@ def midswarm(minX, maxX, minY, maxY, shapes=[], num=10000, depth = 9.545):
         swarm = mswarm[indx_list,:]
         final_swarms.append(swarm)
     return final_swarms
-    
-    
-    
+
+
+
 def rotate_grid_points(lon, lat, data, rm):
     '''
-    A function to rotate geographic data, 
-    given a rotation matrix rm. Works for arbitarry points, 
+    A function to rotate geographic data,
+    given a rotation matrix rm. Works for arbitarry points,
     as well as gridded data.
     '''
     #rotations.rotate_lat_lon(lat[n], lon[n], ra, ang)
@@ -120,7 +120,7 @@ def rotate_grid_points(lon, lat, data, rm):
             nlons.append(temp[1])
             nlats.append(temp[0])
         alons = np.asarray(nlons)
-        alats = np.asarray(nlats)        
+        alats = np.asarray(nlats)
         out = np.column_stack((alons, alats, data))
         return out
     elif len(lon.shape) == len(lat.shape) > 1:
@@ -137,11 +137,11 @@ def rotate_grid_points(lon, lat, data, rm):
         flats = alats.reshape(lon.shape)
         out = np.dstack((flons, flats, data))
         return out
-        
+
 def spatial_mask(minX, maxX, minY, maxY, minZ, maxZ, xyz_array):
     """
     Simple function to get rid of values outside bounding box.
-    Can 
+    Can
     No error checking...
     """
     indx_list = []
@@ -157,7 +157,3 @@ def spatial_mask(minX, maxX, minY, maxY, minZ, maxZ, xyz_array):
                 indx_list.append(i)
         out = xyz_array[indx_list,:]
         return out
-        
-    
-      
-        
